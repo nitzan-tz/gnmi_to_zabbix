@@ -1,0 +1,103 @@
+zabbix_export:
+  version: '6.4'
+  template_groups:
+    - uuid: 36bff6c29af64692839d077febfc7079
+      name: 'Templates/Network devices'
+  templates:
+    - uuid: 94bdb3bd7f234e969209cefbc111ad5f
+      template: 'Template Prometheus Junos Firewall'
+      name: 'Template Prometheus Junos Firewall'
+      groups:
+        - name: 'Templates/Network devices'
+      items:
+        - uuid: 7820dd04c2d844e089970c1eb49e1229
+          name: Prometheus
+          type: HTTP_AGENT
+          key: prom_scraper
+          history: '0'
+          trends: '0'
+          value_type: TEXT
+          url: '{$EXPORTER_URL}'
+          tags:
+            - tag: type
+              value: prometheus
+      discovery_rules:
+        - uuid: dcac89770f884f7b82f79834fa0f9384
+          name: 'Prometheus Junos Firewall LLD'
+          type: DEPENDENT
+          key: lld_prometheus
+          delay: '0'
+          lifetime: '0'
+          item_prototypes:
+            - uuid: d68a354b14ac49de94b64db68b90f09c
+              name: '{#DEVICE} Filter {#FILTER_NAME} Counter {#COUTNER_NAME} bps'
+              type: DEPENDENT
+              key: 'bps_[{#DEVICE}_{#FILTER_NAME}_{#COUTNER_NAME}]'
+              delay: '0'
+              units: Bps
+              description: '{#HELP}'
+              preprocessing:
+                - type: PROMETHEUS_PATTERN
+                  parameters:
+                    - 'junos_firewall_state_counter_bytes{counter_name="{#COUTNER_NAME}",firewall_name="{#FILTER_NAME}",source="{#DEVICE}",subscription_name="firewall"}'
+                    - value
+                    - ''
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              master_item:
+                key: prom_scraper
+              tags:
+                - tag: app
+                  value: firewall_filter
+                - tag: device
+                  value: '{#DEVICE}'
+                - tag: metric_type
+                  value: bps
+            - uuid: bb4a03de14b54e83933875e39c72677e
+              name: '{#DEVICE} Filter {#FILTER_NAME} Counter {#COUTNER_NAME} pps'
+              type: DEPENDENT
+              key: 'pps_[{#DEVICE}_{#FILTER_NAME}_{#COUTNER_NAME}]'
+              delay: '0'
+              units: pps
+              description: '{#HELP}'
+              preprocessing:
+                - type: PROMETHEUS_PATTERN
+                  parameters:
+                    - '{#METRIC}{counter_name="{#COUTNER_NAME}",firewall_name="{#FILTER_NAME}",source="{#DEVICE}",subscription_name="firewall"}'
+                    - value
+                    - ''
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+              master_item:
+                key: prom_scraper
+              tags:
+                - tag: app
+                  value: firewall_filter
+                - tag: device
+                  value: '{#DEVICE}'
+                - tag: metric_type
+                  value: pps
+          master_item:
+            key: prom_scraper
+          lld_macro_paths:
+            - lld_macro: '{#COUTNER_NAME}'
+              path: '$.labels[''counter_name'']'
+            - lld_macro: '{#DEVICE}'
+              path: '$.labels[''source'']'
+            - lld_macro: '{#FILTER_NAME}'
+              path: '$.labels[''firewall_name'']'
+            - lld_macro: '{#HELP}'
+              path: '$[''help'']'
+            - lld_macro: '{#METRIC}'
+              path: '$[''name'']'
+          preprocessing:
+            - type: PROMETHEUS_TO_JSON
+              parameters:
+                - 'junos_firewall_state_counter_packets{counter_name=~".*",firewall_name=~".*",source=~".*",subscription_name="firewall"}'
+      macros:
+        - macro: '{$EXPORTER_URL}'
