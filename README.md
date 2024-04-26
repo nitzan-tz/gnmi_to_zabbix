@@ -3,13 +3,15 @@ Collect GNMI data in Zabbix via GNMIC
 
 This is a demo that collect only Junos Firewall filters but it is very easy to add more statistics from Juniper or other vendors.
 
+## How to use
+
 1. Edit gnmic.yaml confiure your user password and targets
 2. Run gnmic (Beter as a service or docker ) ```gnmic subscribe  --config gnmic.yaml ```
 3. import the zabbix template to zabbix (It is for version 6.4)
 4. On the zabbix server host add the template "Template Prometheus Junos Firewall"
 5. Set the macro {$EXPORTER_URL} to be the http://{{GNMIC_SERVER_IP}}:9804/metrics (replace {{GNMIC_SERVER_IP}} with the GNMIC server IP)
 
-To add other metrics just 
+## To add other metrics just 
 1. Add them to GNMIC config file (If they are not collected )
 2. Verify you can see them when you are doing ```curl to the http://{{GNMIC_SERVER_IP}}:9804/metrics```
 1. clone the Discovery rule in the template
