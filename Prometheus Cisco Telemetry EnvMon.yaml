@@ -1,0 +1,197 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 36bff6c29af64692839d077febfc7079
+      name: 'Templates/Network devices'
+  templates:
+    - uuid: 23b30abbe2674844bbb1de8bbdea5f69
+      template: 'Prometheus Cisco Telemetry Environmental-Monitoring'
+      name: 'Prometheus Cisco Telemetry Environmental-Monitoring'
+      groups:
+        - name: 'Templates/Network devices'
+      items:
+        - uuid: 1185d527c9514f36a1a3b32b9ae9024d
+          name: 'Prometheus Scraper'
+          type: HTTP_AGENT
+          key: prom_scraper_cisco_env
+          delay: 120s
+          history: '0'
+          value_type: TEXT
+          trends: '0'
+          timeout: 10s
+          url: 'localhost:9273/metrics'
+      discovery_rules:
+        - uuid: c3421da1ec10448c9810d4a2b6858c54
+          name: 'Prometheus Cisco Telemetry Environmental Monitoring Fan Discovery'
+          type: DEPENDENT
+          key: lld_prometheus_cisco_telemetry_envmon_fan
+          delay: '0'
+          item_prototypes:
+            - uuid: 1adff3f3724049948eec1b5ee1953ee2
+              name: 'FAN Sensor {#SENSOR} on {#LOCATION}'
+              type: DEPENDENT
+              key: 'fan_[{#SENSOR}_{#LOCATION}]'
+              delay: '0'
+              units: RPM
+              preprocessing:
+                - type: PROMETHEUS_PATTERN
+                  parameters:
+                    - 'cisco_env_sensor_value{description="{#DESCRIPTION}",location="{#LOCATION}",name="{#SENSOR}",name_xr="{#SENSOR_XR}",node="{#NODE}",source="{#DEVICE}",type="fan"}'
+                    - value
+                    - ''
+              master_item:
+                key: prom_scraper_cisco_env
+              tags:
+                - tag: type
+                  value: fan
+          master_item:
+            key: prom_scraper_cisco_env
+          lld_macro_paths:
+            - lld_macro: '{#DESCRIPTION}'
+              path: '$.labels["description"]'
+            - lld_macro: '{#DEVICE}'
+              path: '$.labels["source"]'
+            - lld_macro: '{#HELP}'
+              path: '$["help"]'
+            - lld_macro: '{#LOCATION}'
+              path: '$.labels["location"]'
+            - lld_macro: '{#METRIC}'
+              path: '$["name"]'
+            - lld_macro: '{#NODE}'
+              path: '$.labels["node"]'
+            - lld_macro: '{#SENSOR_TYPE}'
+              path: '$.labels["type"]'
+            - lld_macro: '{#SENSOR_XR}'
+              path: '$.labels["name_xr"]'
+            - lld_macro: '{#SENSOR}'
+              path: '$.labels["name"]'
+          preprocessing:
+            - type: PROMETHEUS_TO_JSON
+              parameters:
+                - 'cisco_env_sensor_value{description=~".*",location=~".*",name=~".*",name_xr=~".*",node=~".*",source=~".*",type="fan"}'
+        - uuid: 644ebdff8dc143bab8f1adb3b5146050
+          name: 'Prometheus Cisco Telemetry Environmental Monitoring Power Discovery'
+          type: DEPENDENT
+          key: lld_prometheus_cisco_telemetry_envmon_power
+          delay: '0'
+          item_prototypes:
+            - uuid: 424f8c85d2a944869f96ce9f6b2f48b3
+              name: 'Power Sensor {#SENSOR} on {#LOCATION}'
+              type: DEPENDENT
+              key: 'power_[{#SENSOR}_{#LOCATION}]'
+              delay: '0'
+              units: W
+              description: '{#NAME}'
+              preprocessing:
+                - type: PROMETHEUS_PATTERN
+                  parameters:
+                    - 'cisco_env_sensor_value{description="{#DESCRIPTION}",location="{#LOCATION}",name="{#SENSOR}",name_xr="{#SENSOR_XR}",node="{#NODE}",source="{#DEVICE}",type="power"}'
+                    - value
+                    - ''
+              master_item:
+                key: prom_scraper_cisco_env
+              tags:
+                - tag: type
+                  value: power
+              trigger_prototypes:
+                - uuid: 3aa3eedc4a004771925e3ee349544b18
+                  expression: 'last(/Prometheus Cisco Telemetry Environmental-Monitoring/power_[{#SENSOR}_{#LOCATION}],#2)<{$POWER_WARN}'
+                  name: 'Power Sensor {#SENSOR} on {#LOCATION} is below {$POWER_WARN}'
+          master_item:
+            key: prom_scraper_cisco_env
+          lld_macro_paths:
+            - lld_macro: '{#DESCRIPTION}'
+              path: '$.labels["description"]'
+            - lld_macro: '{#DEVICE}'
+              path: '$.labels["source"]'
+            - lld_macro: '{#HELP}'
+              path: '$["help"]'
+            - lld_macro: '{#LOCATION}'
+              path: '$.labels["location"]'
+            - lld_macro: '{#METRIC}'
+              path: '$["name"]'
+            - lld_macro: '{#NODE}'
+              path: '$.labels["node"]'
+            - lld_macro: '{#SENSOR_TYPE}'
+              path: '$.labels["type"]'
+            - lld_macro: '{#SENSOR_XR}'
+              path: '$.labels["name_xr"]'
+            - lld_macro: '{#SENSOR}'
+              path: '$.labels["name"]'
+          preprocessing:
+            - type: PROMETHEUS_TO_JSON
+              parameters:
+                - 'cisco_env_sensor_value{description=~".*",location=~".*",name=~".*",name_xr=~".*",node=~".*",source=~".*",type="power"}'
+        - uuid: 97124f319a7a44ea9d2c05d63306d98d
+          name: 'Prometheus Cisco Telemetry Environmental Monitoring Temperature Discovery'
+          type: DEPENDENT
+          key: lld_prometheus_cisco_telemetry_envmon_temperature
+          delay: '0'
+          item_prototypes:
+            - uuid: 6e00afca30bb40199039552572513d8c
+              name: 'Temperature Sensor {#SENSOR} on {#LOCATION}'
+              type: DEPENDENT
+              key: 'temperature_[{#SENSOR}_{#LOCATION}]'
+              delay: '0'
+              trends: '0'
+              units: Celsius
+              description: '{#NAME}'
+              preprocessing:
+                - type: PROMETHEUS_PATTERN
+                  parameters:
+                    - 'cisco_env_sensor_value{description="{#DESCRIPTION}",location="{#LOCATION}",name="{#SENSOR}",name_xr="{#SENSOR_XR}",node="{#NODE}",source="{#DEVICE}",type="temperature"}'
+                    - value
+                    - ''
+                  error_handler: DISCARD_VALUE
+              master_item:
+                key: prom_scraper_cisco_env
+              tags:
+                - tag: type
+                  value: temperature
+              trigger_prototypes:
+                - uuid: da66161739b74239b7a41c7985d96fbd
+                  expression: 'last(/Prometheus Cisco Telemetry Environmental-Monitoring/temperature_[{#SENSOR}_{#LOCATION}],#2)> {$TEMP_WARN}'
+                  name: 'Temperature Sensor {#SENSOR} on {#LOCATION} is above {$TEMP_WARN}'
+                  event_name: 'Temperature Sensor {#SENSOR} on {#LOCATION} is above {$TEMP_WARN}'
+                  opdata: 'Current value: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+          master_item:
+            key: prom_scraper_cisco_env
+          lld_macro_paths:
+            - lld_macro: '{#DESCRIPTION}'
+              path: '$.labels["description"]'
+            - lld_macro: '{#DEVICE}'
+              path: '$.labels["source"]'
+            - lld_macro: '{#HELP}'
+              path: '$["help"]'
+            - lld_macro: '{#LOCATION}'
+              path: '$.labels["location"]'
+            - lld_macro: '{#METRIC}'
+              path: '$["name"]'
+            - lld_macro: '{#NODE}'
+              path: '$.labels["node"]'
+            - lld_macro: '{#SENSOR_TYPE}'
+              path: '$.labels["type"]'
+            - lld_macro: '{#SENSOR_XR}'
+              path: '$.labels["name_xr"]'
+            - lld_macro: '{#SENSOR}'
+              path: '$.labels["name"]'
+          preprocessing:
+            - type: PROMETHEUS_TO_JSON
+              parameters:
+                - 'cisco_env_sensor_value{description=~".*",location=~".*",name=~".*",name_xr=~".*",node=~".*",source=~".*",type="temperature"}'
+      tags:
+        - tag: class
+          value: network
+        - tag: target
+          value: Cisco
+        - tag: target
+          value: IOS-XR
+      macros:
+        - macro: '{$EXPORTER_URL}'
+        - macro: '{$POWER_WARN}'
+          value: '10'
+        - macro: '{$TEMP_WARN}'
+          value: '55'
+        - macro: '{$TEMP_WARN:"CPU"}'
+          value: '70'

@@ -1,0 +1,83 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 36bff6c29af64692839d077febfc7079
+      name: 'Templates/Network devices'
+  templates:
+    - uuid: 38899603aa774933906b6938a1eb3e58
+      template: 'Prometheus Cisco Telemetry BGP'
+      name: 'Prometheus Cisco Telemetry BGP'
+      groups:
+        - name: 'Templates/Network devices'
+      items:
+        - uuid: 4c9ec613b70246389e1a320fa95dc515
+          name: 'Prometheus Scraper'
+          type: HTTP_AGENT
+          key: prom_scraper
+          delay: 30s
+          history: '0'
+          value_type: TEXT
+          trends: '0'
+          timeout: 10s
+          url: 'localhost:9273/metrics'
+      discovery_rules:
+        - uuid: d2bfc36b714c4e03a7696b6093842548
+          name: 'Prometheus Cisco Telemetry BGP Discovery'
+          type: DEPENDENT
+          key: lld_prometheus_cisco_telemetry_bgp
+          delay: '0'
+          item_prototypes:
+            - uuid: 054aae835c664fa89dad558b0cf244a4
+              name: 'BGP Session {#NEIGHBOR_ADDRESS} {#PEER_GROUP} State'
+              type: DEPENDENT
+              key: 'bgp_session_state_[{#NEIGHBOR_ADDRESS}_{#PEER_GROUP}]'
+              delay: '0'
+              value_type: TEXT
+              trends: '0'
+              description: '{#NAME}'
+              preprocessing:
+                - type: PROMETHEUS_PATTERN
+                  parameters:
+                    - 'bgp_neighbors_state_last_established{neighbor_address="{#NEIGHBOR_ADDRESS}", source="{#DEVICE}", peer_group="{#PEER_GROUP}", session_state=~".*"}'
+                    - label
+                    - session_state
+                  error_handler: DISCARD_VALUE
+              master_item:
+                key: prom_scraper
+              tags:
+                - tag: type
+                  value: bgp
+              trigger_prototypes:
+                - uuid: 546a1f46572d4e9583cfe79a558c8694
+                  expression: 'last(/Prometheus Cisco Telemetry BGP/bgp_session_state_[{#NEIGHBOR_ADDRESS}_{#PEER_GROUP}])<>"ESTABLISHED"'
+                  name: 'BGP Session {#NEIGHBOR_ADDRESS} {#PEER_GROUP} State is not ESTABLISHED'
+                  event_name: 'BGP Session {#NEIGHBOR_ADDRESS} {#PEER_GROUP} State is not ESTABLISHED'
+                  priority: WARNING
+          master_item:
+            key: prom_scraper
+          lld_macro_paths:
+            - lld_macro: '{#DEVICE}'
+              path: '$.labels["source"]'
+            - lld_macro: '{#HELP}'
+              path: '$["help"]'
+            - lld_macro: '{#METRIC}'
+              path: '$["name"]'
+            - lld_macro: '{#NEIGHBOR_ADDRESS}'
+              path: '$.labels["neighbor_address"]'
+            - lld_macro: '{#PEER_GROUP}'
+              path: '$.labels["peer_group"]'
+            - lld_macro: '{#PEER_TYPE}'
+              path: '$.labels["peer_type"]'
+          preprocessing:
+            - type: PROMETHEUS_TO_JSON
+              parameters:
+                - 'bgp_neighbors_state_last_established{neighbor_address=~".*",peer_type=~".*",source="{$ROUTER_HOSTNAME}",session_state=~".*"}'
+      tags:
+        - tag: class
+          value: network
+        - tag: target
+          value: Cisco
+        - tag: target
+          value: IOS-XR
+      macros:
+        - macro: '{$EXPORTER_URL}'

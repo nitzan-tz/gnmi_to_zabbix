@@ -1,0 +1,105 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 36bff6c29af64692839d077febfc7079
+      name: 'Templates/Network devices'
+  templates:
+    - uuid: 5c4fec271359464cb29ace0d2f0b7b9b
+      template: 'Prometheus Cisco Telemetry ISIS'
+      name: 'Prometheus Cisco Telemetry ISIS'
+      groups:
+        - name: 'Templates/Network devices'
+      items:
+        - uuid: a6c197956da1496f936969e64bb12052
+          name: 'Prometheus Scraper ISIS'
+          type: HTTP_AGENT
+          key: prom_scraper_cisco_isis
+          delay: 30s
+          history: '0'
+          value_type: TEXT
+          trends: '0'
+          timeout: 10s
+          url: 'localhost:9273/metrics'
+      discovery_rules:
+        - uuid: 370f1f4ea1fa4ea08ee86ba1e2f5ca13
+          name: 'Prometheus Cisco Telemetry ISIS Discovery'
+          type: DEPENDENT
+          key: lld_prometheus_cisco_telemetry_isis
+          delay: '0'
+          item_prototypes:
+            - uuid: ce201582e6784f728eae21e1453e0a45
+              name: 'ISIS Adjacency count {#INTERFACE_NAME} {#INSTANCE_NAME}'
+              type: DEPENDENT
+              key: 'isis_adj_count_[{#INTERFACE_NAME}_{#INSTANCE_NAME}]'
+              delay: '0'
+              trends: '0'
+              description: '{#NAME}'
+              preprocessing:
+                - type: PROMETHEUS_PATTERN
+                  parameters:
+                    - 'cisco_isis_adj_count_interface_status_and_data_enabled_per_area_data_adjacency_count{instance_name="{#INSTANCE_NAME}",interface_name="{#INTERFACE_NAME}",source="{#DEVICE}"}'
+                    - value
+                    - ''
+                  error_handler: DISCARD_VALUE
+              master_item:
+                key: prom_scraper_cisco_isis
+              tags:
+                - tag: type
+                  value: isis
+              trigger_prototypes:
+                - uuid: 7b59ee6da1094a6ca1e69a1aad6d3799
+                  expression: 'last(/Prometheus Cisco Telemetry ISIS/isis_adj_count_[{#INTERFACE_NAME}_{#INSTANCE_NAME}])=0'
+                  name: 'ISIS Adjacency count {#INTERFACE_NAME} {#INSTANCE_NAME} is 0'
+                  opdata: 'Current value: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+            - uuid: 42d73aff038f44e8a8a848032742f472
+              name: 'ISIS Adjacency {#INTERFACE_NAME} {#INSTANCE_NAME} uptime'
+              type: DEPENDENT
+              key: 'isis_adj_uptime_[{#INTERFACE_NAME}_{#INSTANCE_NAME}]'
+              delay: '0'
+              trends: '0'
+              description: '{#NAME}'
+              preprocessing:
+                - type: PROMETHEUS_PATTERN
+                  parameters:
+                    - 'cisco_isis_neighbors_neighbor_uptime{instance_name="{#INSTANCE_NAME}",interface_name="{#INTERFACE_NAME}",source="{#DEVICE}"}'
+                    - value
+                    - ''
+                  error_handler: DISCARD_VALUE
+              master_item:
+                key: prom_scraper_cisco_isis
+              tags:
+                - tag: type
+                  value: isis
+              trigger_prototypes:
+                - uuid: 3f86dd15719a4aed813cecb6ed06823a
+                  expression: 'last(/Prometheus Cisco Telemetry ISIS/isis_adj_uptime_[{#INTERFACE_NAME}_{#INSTANCE_NAME}])<900'
+                  name: 'ISIS Adjacency {#INTERFACE_NAME} {#INSTANCE_NAME} uptime is less then 15 min'
+                  opdata: 'Current value: {ITEM.LASTVALUE1}'
+                  priority: INFO
+          master_item:
+            key: prom_scraper_cisco_isis
+          lld_macro_paths:
+            - lld_macro: '{#DEVICE}'
+              path: '$.labels["source"]'
+            - lld_macro: '{#HELP}'
+              path: '$["help"]'
+            - lld_macro: '{#INSTANCE_NAME}'
+              path: '$.labels["instance_name"]'
+            - lld_macro: '{#INTERFACE_NAME}'
+              path: '$.labels["interface_name"]'
+            - lld_macro: '{#METRIC}'
+              path: '$["name"]'
+          preprocessing:
+            - type: PROMETHEUS_TO_JSON
+              parameters:
+                - 'cisco_isis_adj_count_interface_status_and_data_enabled_per_area_data_adjacency_count{instance_name=~".*",interface_name=~".*",source=~".*"}'
+      tags:
+        - tag: class
+          value: network
+        - tag: target
+          value: Cisco
+        - tag: target
+          value: IOS-XR
+      macros:
+        - macro: '{$EXPORTER_URL}'
