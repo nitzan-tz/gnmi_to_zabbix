@@ -1,5 +1,5 @@
 # gnmi_to_zabbix
-Collect GNMI data in Zabbix via GNMIC or for Cisco telemetry model-driven
+Collect GNMI data in Zabbix via GNMIC or for Cisco telemetry model-driven with telegraf
 
 This is a demo that collect only Junos Firewall filters but it is very easy to add more statistics from Juniper or other vendors.
 
